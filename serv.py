@@ -9,17 +9,10 @@ class UbuntuSystemService:
             status = {}
             logs = []
             for line in lines:
-                if 'CGroup' in line:
-                    continue
                 if ':' in line:
                     key, value = line.split(':', 1)
-                    key = key.strip()
-                    value = value.strip()
-                    if key == '●' or key == 'Active':
-                        status['status'] = value
-                    else:
-                        status[key] = value
-                else:
+                    status[key.strip()] = value.strip()
+                elif 'systemd[' in line:
                     logs.append(line.strip())
             status['logs'] = logs
             return json.dumps(status)
