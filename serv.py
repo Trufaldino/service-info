@@ -8,12 +8,16 @@ class UbuntuSystemService:
             lines = output.split('\n')
             status = {}
             logs = []
+            keys = ['Loaded', 'Active', 'Docs', 'Main PID', 'Tasks']
             for line in lines:
-                if line.startswith('Loaded') or line.startswith('Active') or line.startswith('Docs') or line.startswith('Main PID') or line.startswith('Tasks'):
-                    key, value = line.split(':', 1)
-                    status[key.strip()] = value.strip()
-                elif 'systemd[' in line:
-                    logs.append(line.strip())
+                for key in keys:
+                    if key in line:
+                        key, value = line.split(':', 1)
+                        status[key.strip()] = value.strip()
+                        break
+                else:
+                    if 'systemd[' in line:
+                        logs.append(line.strip())
             status['logs'] = logs
             return json.dumps(status)
         except subprocess.CalledProcessError as e:
