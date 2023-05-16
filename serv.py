@@ -9,7 +9,7 @@ class UbuntuSystemService:
             status = {}
             logs = []
             for line in lines:
-                if ':' in line:
+                if line.startswith('Loaded') or line.startswith('Active') or line.startswith('Docs') or line.startswith('Main PID') or line.startswith('Tasks'):
                     key, value = line.split(':', 1)
                     status[key.strip()] = value.strip()
                 elif 'systemd[' in line:
