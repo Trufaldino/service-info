@@ -1,5 +1,6 @@
 import subprocess
 import json
+from flask import Flask
 
 class UbuntuSystemService:
     def get_service_status(self, service_name):
@@ -23,9 +24,14 @@ class UbuntuSystemService:
         except subprocess.CalledProcessError as e:
             return json.dumps({"error": f"Failed to get status for service '{service_name}': {e}"})
 
-# Пример использования
+app = Flask(__name__)
 ubuntu_service = UbuntuSystemService()
-
 service_name = 'nginx'  # Замените на имя сервиса, который вы хотите проверить
-service_status = ubuntu_service.get_service_status(service_name)
-print(service_status)
+
+@app.route('/')
+def get_service_status():
+    service_status = ubuntu_service.get_service_status(service_name)
+    return service_status
+
+if __name__ == '__main__':
+    app.run()
