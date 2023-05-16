@@ -7,10 +7,21 @@ class UbuntuSystemService:
             output = subprocess.check_output(['service', service_name, 'status'], universal_newlines=True)
             lines = output.split('\n')
             status = {}
+            logs = []
             for line in lines:
+                if 'CGroup' in line:
+                    continue
                 if ':' in line:
                     key, value = line.split(':', 1)
-                    status[key.strip()] = value.strip()
+                    key = key.strip()
+                    value = value.strip()
+                    if key == '●' or key == 'Active':
+                        status['status'] = value
+                    else:
+                        status[key] = value
+                else:
+                    logs.append(line.strip())
+            status['logs'] = logs
             return json.dumps(status)
         except subprocess.CalledProcessError as e:
             return json.dumps({"error": f"Failed to get status for service '{service_name}': {e}"})
