@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Ubuntu Service Status</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+    {% if service_status.get('Active', '').startswith('active') %}
+        <form action="/disable" method="POST">
+            <button type="submit" class="btn-disable">Disable Service</button>
+        </form>
+    {% else %}
+        <form action="/enable" method="POST">
+            <button type="submit" class="btn-enable">Enable Service</button>
+        </form>
+    {% endif %}
+    <h1>Ubuntu Service Status</h1>
+    <table>
+        <tr>
+            <th>Key</th>
+            <th>Value</th>
+        </tr>
+        {% for key, value in service_status.items() %}
+            <tr>
+                <td>{{ key }}</td>
+                <td>{{ value }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+
+    <h1>Logs</h1>
+    <table>
+        {% for log in logs %}
+            <tr>{{ log }}</tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
