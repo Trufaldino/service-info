@@ -1,12 +1,24 @@
 import subprocess
 import json
 from flask import Flask, render_template, redirect
+from flask_httpauth import HTTPBasicAuth
 
 
 class UbuntuSystemService:
+    def __init__(self):
+        self.auth = HTTPBasicAuth()
+        self.users = {
+            "admin": "password"  # Придумайте логин пароль для входа
+        }
+
+        @self.auth.verify_password
+        def verify_password(username, password):
+            if username in self.users and password == self.users[username]:
+                return username
+
     def get_service_status(self, service_name):
         try:
-            output = subprocess.check_output(['service', service_name, 'status'], universal_newlines=True)
+            output = subprocess.check_output(['service', service_name, 'status'], stderr=subprocess.STDOUT, universal_newlines=True)
             lines = output.split('\n')
             status = {}
             logs = []
@@ -23,18 +35,29 @@ class UbuntuSystemService:
             status['logs'] = logs
             return json.dumps(status)
         except subprocess.CalledProcessError as e:
-            return json.dumps({"error": f"Failed to get status for service '{service_name}': {e}"})
+            if e.returncode == 3:
+                return json.dumps({"status": f"The service '{service_name}' is inactive"})
+            else:
+                return json.dumps({"error": f"Failed to get status for service '{service_name}': {e}"})
 
     def enable_service(self, service_name):
         try:
-            subprocess.check_output(['sudo', 'service', service_name, 'start'])
+            subprocess.check_output(['service', service_name, 'start'])
             return True
         except subprocess.CalledProcessError as e:
             return False
 
     def disable_service(self, service_name):
         try:
-            subprocess.check_output(['sudo', 'service', service_name, 'stop'])
+            subprocess.check_output(['service', service_name, 'stop'])
+            return True
+        except subprocess.CalledProcessError as e:
+            return False
+
+    def restart_reload_service(self, service_name):
+        try:
+            subprocess.check_output(['sudo', 'service', service_name, 'restart'])
+            subprocess.check_output(['sudo', 'service', service_name, 'reload'])
             return True
         except subprocess.CalledProcessError as e:
             return False
@@ -45,12 +68,18 @@ ubuntu_service = UbuntuSystemService()
 service_name = 'nginx'  # Замените на имя сервиса, который вы хотите проверить
 
 
+@app.before_request
+@ubuntu_service.auth.login_required
+def before_request():
+    pass
+
+
 @app.route('/')
 def index():
     service_status = ubuntu_service.get_service_status(service_name)
     parsed_status = json.loads(service_status)
     logs = parsed_status.get('logs', [])
-    return render_template('index.html', service_status=parsed_status, logs=logs)
+    return render_template('index.html', service_status=parsed_status, logs=logs, service_name=service_name)
 
 
 @app.route('/enable', methods=['POST'])
@@ -67,6 +96,14 @@ def disable_service():
         return redirect('/')
     else:
         return "Failed to disable the service."
+
+
+@app.route('/restart_reload', methods=['POST'])
+def restart_reload_service():
+    if ubuntu_service.restart_reload_service(service_name):
+        return redirect('/')
+    else:
+        return "Failed to restart and reload the service."
 
 
 if __name__ == '__main__':
