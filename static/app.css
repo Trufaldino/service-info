@@ -1,6 +1,6 @@
 body {
     font-family: Arial, sans-serif;
-    background-color: #EDEEDD;
+    background-color: #ffffff;
 }
 
 h1 {
@@ -22,7 +22,7 @@ td {
     text-align: left;
     opacity: 1;
     transition: opacity 0.3s ease;
-    background-color: #E8E5D7;
+    background-color: #ffffff;
 }
 
 th, td:hover {
@@ -59,4 +59,7 @@ th, td:hover {
     background-color: #FFD700;
     color: #3c3d3b;
     width: 170px;
+}
+.button-container {
+    display: flex;
 }
