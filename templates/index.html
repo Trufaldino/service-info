@@ -2,22 +2,24 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Ubuntu Service Status</title>
+    <title>Ubuntu {{ service_name }} status</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='app.css') }}">
 </head>
 <body>
-    {% if service_status.get('Active', '').startswith('active') %}
-        <form action="/disable" method="POST">
-            <button type="submit" class="btn-disable">Disable service</button>
+    <div class="button-container">
+        {% if service_status.get('Active', '').startswith('active') %}
+            <form action="/disable" method="POST">
+                <button type="submit" class="btn-disable">Disable service</button>
+            </form>
+        {% else %}
+            <form action="/enable" method="POST">
+                <button type="submit" class="btn-enable">Enable service</button>
+            </form>
+        {% endif %}
+        <form action="/restart_reload" method="post">
+            <button type="submit" class="btn-restart-reload">Reload service</button>
         </form>
-    {% else %}
-        <form action="/enable" method="POST">
-            <button type="submit" class="btn-enable">Enable service</button>
-        </form>
-    {% endif %}
-    <form action="/restart_reload" method="post">
-        <button type="submit" class="btn-restart-reload">Restart and reload</button>
-    </form>
+    </div>
     <h1>Ubuntu {{ service_name }} status</h1>
     <table>
         <tr>
@@ -32,10 +34,15 @@
         {% endfor %}
     </table>
     <h1>Logs</h1>
-    <table>
-        {% for log in logs %}
-            <tr>{{ log }}</tr>
-        {% endfor %}
+    {% if logs %}
+        <table>
+            {% for log in logs %}
+                <tr>{{ log }}</tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>Logs are empty</p>
+    {% endif %}
     </table>
 </body>
 </html>

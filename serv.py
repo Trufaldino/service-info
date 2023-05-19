@@ -2,6 +2,9 @@ import subprocess
 import json
 from flask import Flask, render_template, redirect
 from flask_httpauth import HTTPBasicAuth
+import sys
+import psutil
+import re
 
 
 class UbuntuSystemService:
@@ -33,6 +36,11 @@ class UbuntuSystemService:
                     if 'systemd[' in line:
                         logs.append(line.strip())
             status['logs'] = logs
+            main_pid = re.search(r'\d+', status['Main PID']).group()
+            process = psutil.Process(int(main_pid))
+            memory_info = process.memory_info()
+            status['RAM usage'] = f"{memory_info.rss / 1024 / 1024:.2f} MB"
+            status['Processor usage'] = f"{process.cpu_percent(interval=1):.2f}%"
             return json.dumps(status)
         except subprocess.CalledProcessError as e:
             if e.returncode == 3:
@@ -65,7 +73,11 @@ class UbuntuSystemService:
 
 app = Flask(__name__)
 ubuntu_service = UbuntuSystemService()
-service_name = 'nginx'  # Замените на имя сервиса, который вы хотите проверить
+
+if len(sys.argv) > 1:
+    service_name = sys.argv[1]
+else:
+    raise ValueError('Please enter a service name as a command-line argument. For example: python3 serv.py nginx')
 
 
 @app.before_request
