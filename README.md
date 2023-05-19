@@ -5,13 +5,20 @@
 # pip install -r requirements.txt
 ```
 
-2. Run the script
+2. In class UbuntuSystemService change login and password.
+   Default login = admin.
+   Default password = password
 ```bash
-# python serv.py your_service_name
+# self.users = {"admin": "password"} # Change if you need.
 ```
 
 3. Run the script
 ```bash
-# Now you can enable, disable and reload particular service.
+# python serv.py your_service_name
+```
+
+4. How to use:
+```bash
+# Now you can enable, disable and reload particular service with buttons.
 # All the information about the service is shown in the table. 
 ```
