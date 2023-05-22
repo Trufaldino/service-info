@@ -36,11 +36,18 @@ class UbuntuSystemService:
                     if 'systemd[' in line:
                         logs.append(line.strip())
             status['logs'] = logs
+
             main_pid = re.search(r'\d+', status['Main PID']).group()
             process = psutil.Process(int(main_pid))
+            child_pids = process.children(recursive=True)
+            total_cpu_percent = process.cpu_percent(interval=1)
+            for child_pid in child_pids:
+                child_process = psutil.Process(child_pid)
+                total_cpu_percent += child_process.cpu_percent(interval=0)
+            status['Processor usage'] = f"{total_cpu_percent:.2f}%"
             memory_info = process.memory_info()
             status['RAM usage'] = f"{memory_info.rss / 1024 / 1024:.2f} MB"
-            status['Processor usage'] = f"{process.cpu_percent(interval=1):.2f}%"
+
             return json.dumps(status)
         except subprocess.CalledProcessError as e:
             if e.returncode == 3:
