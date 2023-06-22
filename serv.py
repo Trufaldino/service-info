@@ -41,12 +41,13 @@ class UbuntuSystemService:
             process = psutil.Process(int(main_pid))
             child_pids = process.children(recursive=True)
             total_cpu_percent = process.cpu_percent(interval=1)
+            memory_sz = process.memory_info().rss
             for child_pid in child_pids:
                 child_process = psutil.Process(int(child_pid.pid))
-                total_cpu_percent += child_process.cpu_percent(interval=0)
+                total_cpu_percent += child_process.cpu_percent(interval=1)
+                memory_sz += child_process.memory_info().rss
             status['Processor usage'] = f"{total_cpu_percent:.2f}%"
-            memory_info = process.memory_info()
-            status['RAM usage'] = f"{memory_info.rss / 1024 / 1024:.2f} MB"
+            status['RAM usage'] = f"{memory_sz / 1024 / 1024:.2f} MB"
 
             return json.dumps(status)
         except subprocess.CalledProcessError as e:
