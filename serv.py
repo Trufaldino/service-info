@@ -42,7 +42,7 @@ class UbuntuSystemService:
             child_pids = process.children(recursive=True)
             total_cpu_percent = process.cpu_percent(interval=1)
             for child_pid in child_pids:
-                child_process = psutil.Process(child_pid)
+                child_process = psutil.Process(int(child_pid.pid))
                 total_cpu_percent += child_process.cpu_percent(interval=0)
             status['Processor usage'] = f"{total_cpu_percent:.2f}%"
             memory_info = process.memory_info()
