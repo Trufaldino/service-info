@@ -8,16 +8,16 @@
 <body>
     <div class="button-container">
         {% if service_status.get('Active', '').startswith('active') %}
-            <form action="/disable" method="POST">
-                <button type="submit" class="btn-disable">Disable service</button>
+            <form action="/stop" method="POST">
+                <button type="submit" class="btn-disable">Stop</button>
             </form>
         {% else %}
-            <form action="/enable" method="POST">
-                <button type="submit" class="btn-enable">Enable service</button>
+            <form action="/start" method="POST">
+                <button type="submit" class="btn-enable">Start</button>
             </form>
         {% endif %}
         <form action="/restart_reload" method="post">
-            <button type="submit" class="btn-restart-reload">Reload service</button>
+            <button type="submit" class="btn-restart-reload">Reload</button>
         </form>
     </div>
     <h1>{{ service_name }} status</h1>

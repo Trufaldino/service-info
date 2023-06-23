@@ -5,10 +5,12 @@ from flask_httpauth import HTTPBasicAuth
 import sys
 import psutil
 import re
+import datetime
 
 
 class UbuntuSystemService:
     def __init__(self):
+        self.start_time = datetime.datetime.now()
         self.auth = HTTPBasicAuth()
         self.users = {
             "admin": "password"  # Придумайте логин пароль для входа
@@ -21,10 +23,10 @@ class UbuntuSystemService:
 
     def get_service_status(self, service_name):
         try:
-            output = subprocess.check_output(['service', service_name, 'status'], stderr=subprocess.STDOUT, universal_newlines=True)
+            output = subprocess.check_output(['sudo','service', service_name, 'status'], stderr=subprocess.STDOUT, universal_newlines=True)
             lines = output.split('\n')
             status = {}
-            logs = []
+            logs = subprocess.check_output(['journalctl', '-u', service_name, '--since', self.start_time.strftime('%Y-%m-%d %H:%M:%S')], universal_newlines=True)
             keys = ['Loaded', 'Active', 'Docs', 'Main PID', 'Tasks']
             for line in lines:
                 for key in keys:
@@ -32,22 +34,27 @@ class UbuntuSystemService:
                         key, value = line.split(':', 1)
                         status[key.strip()] = value.strip()
                         break
-                else:
-                    if 'systemd[' in line:
-                        logs.append(line.strip())
-            status['logs'] = logs
+            status['logs'] = logs.split('\n')
 
-            main_pid = re.search(r'\d+', status['Main PID']).group()
-            process = psutil.Process(int(main_pid))
-            child_pids = process.children(recursive=True)
-            total_cpu_percent = process.cpu_percent(interval=1)
-            memory_sz = process.memory_info().rss
-            for child_pid in child_pids:
-                child_process = psutil.Process(int(child_pid.pid))
-                total_cpu_percent += child_process.cpu_percent(interval=1)
-                memory_sz += child_process.memory_info().rss
-            status['Processor usage'] = f"{total_cpu_percent:.2f}%"
-            status['RAM usage'] = f"{memory_sz / 1024 / 1024:.2f} MB"
+            main_pid = re.search(r'\d+', status.get('Main PID', '')).group() 
+            if main_pid:
+                try:
+                    process = psutil.Process(int(main_pid))
+                    child_pids = process.children(recursive=True)
+                    total_cpu_percent = process.cpu_percent(interval=1)
+                    memory_sz = process.memory_info().rss
+                    for child_pid in child_pids:
+                        child_process = psutil.Process(int(child_pid.pid))
+                        total_cpu_percent += child_process.cpu_percent(interval=1)
+                        memory_sz += child_process.memory_info().rss
+                    status['Processor usage'] = f"{total_cpu_percent:.2f}%"
+                    status['RAM usage'] = f"{memory_sz / 1024 / 1024:.2f} MB"
+                except psutil.NoSuchProcess:
+                    status['Processor usage'] = 'N/A'
+                    status['RAM usage'] = 'N/A'
+            else:
+                status['Processor usage'] = 'N/A'
+                status['RAM usage'] = 'N/A'
 
             return json.dumps(status)
         except subprocess.CalledProcessError as e:
@@ -56,16 +63,16 @@ class UbuntuSystemService:
             else:
                 return json.dumps({"error": f"Failed to get status for service '{service_name}': {e}"})
 
-    def enable_service(self, service_name):
+    def start_service(self, service_name):
         try:
-            subprocess.check_output(['service', service_name, 'start'])
+            subprocess.check_output(['sudo', 'service', service_name, 'start'])
             return True
         except subprocess.CalledProcessError as e:
             return False
 
-    def disable_service(self, service_name):
+    def stop_service(self, service_name):
         try:
-            subprocess.check_output(['service', service_name, 'stop'])
+            subprocess.check_output(['sudo', 'service', service_name, 'stop'])
             return True
         except subprocess.CalledProcessError as e:
             return False
@@ -102,17 +109,17 @@ def index():
     return render_template('index.html', service_status=parsed_status, logs=logs, service_name=service_name)
 
 
-@app.route('/enable', methods=['POST'])
+@app.route('/start', methods=['POST'])
 def enable_service():
-    if ubuntu_service.enable_service(service_name):
+    if ubuntu_service.start_service(service_name):
         return redirect('/')
     else:
-        return "Failed to enable the service."
+        return "Failed to start the service."
 
 
-@app.route('/disable', methods=['POST'])
+@app.route('/stop', methods=['POST'])
 def disable_service():
-    if ubuntu_service.disable_service(service_name):
+    if ubuntu_service.stop_service(service_name):
         return redirect('/')
     else:
         return "Failed to disable the service."
